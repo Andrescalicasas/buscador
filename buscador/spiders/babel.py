@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+
 from scrapy.spider import Spider
 from scrapy.selector import Selector
 from scrapy import signals
@@ -13,7 +15,7 @@ from scrapy.http.request import Request
 
 class Babel(Spider):  
         name = "babel"
-        allowed_domains = ["http://www.babellibros.com/"]
+        allowed_domains = ["babellibros.com"]
         start_urls = []
 
         def __init__(self, isbn='./'):
@@ -30,10 +32,10 @@ class Babel(Spider):
                     if isbn.strip() in lista_temp:
                         continue
                     else:
-                        self.start_urls.append("http://www.babellibros.com/busqueda/listaLibros.php?tipoBus=full&palabrasBusqueda="+isbn.strip()+"&boton=Buscar")
+                        self.start_urls.append("http://babellibros.com/busqueda/listaLibros.php?tipoBus=full&palabrasBusqueda="+isbn.strip()+"&boton=Buscar")
             else:
                 for isbn in reader:
-                    self.start_urls.append("http://www.babellibros.com/busqueda/listaLibros.php?tipoBus=full&palabrasBusqueda="+isbn.strip()+"&boton=Buscar")              
+                    self.start_urls.append("http://babellibros.com/busqueda/listaLibros.php?tipoBus=full&palabrasBusqueda="+isbn.strip()+"&boton=Buscar")              
             
             dispatcher.connect(self.elimina_temp, signals.spider_closed) 
 
@@ -41,9 +43,8 @@ class Babel(Spider):
             try:
                 sel = Selector(response)
                 div = sel.css('div.blMinifichaTextG')
-                url = div.xpath('.//a/@href')[0].extract()
-                print 'http://www.babellibros.com'+url             
-                yield Request('http://www.babellibros.com'+url, callback=self.leer)                                                           
+                url = div.xpath('.//a/@href')[0].extract()        
+                yield Request('http://babellibros.com'+url, callback=self.leer)                                                           
             except:
                 url = response.url.split("=")[2].split("&")[0]
                 self.escribe_temp(url)
@@ -52,17 +53,31 @@ class Babel(Spider):
         def leer(self, response):           
             sel = Selector(response)           
             con_ficha = sel.css('div.blMinifichaTextG')
-            print 'Titulo: ' +con_ficha.xpath('.//dd/text()')[0].extract()
-            print 'Autor: ' + con_ficha.xpath('.//dd')[2].xpath('.//a/text()')[0].extract()
-            print 'Editorial: ' + con_ficha.xpath('.//dd')[3].xpath('.//a/text()')[0].extract()
-            print 'Isbn: ' + con_ficha.xpath('.//dd/text()')[4].extract()
             con_dispo = sel.css('div.blDisponibilidad')
-            print 'Disponibilidad: ' + con_dispo.xpath('.//text()')[0].extract().split('\t')[11].split('d')[0]
-            print 'Paginas: ' + con_ficha.xpath('.//dd/text()')[5].extract()   
             con_precio = sel.css('div.blTextPrice')
-            print 'Precio: ' + con_precio.xpath('.//text()')[2].extract().split(' ')[0]
+
+
+            for i in range(0, len(con_ficha.xpath('.//dt'))):
+
+                print 'Titulo: ' +con_ficha.xpath('.//dd/text()')[0].extract()
+
+                if con_ficha.xpath('.//dt/text()')[i].extract() == u'Autor:':
+                    print 'Autor: ' +con_ficha.xpath('.//dd')[i].xpath('.//a/text()')[0].extract()
+                if con_ficha.xpath('.//dt/text()')[i].extract() == u'Editorial:':
+                    print 'Editorial: ' +con_ficha.xpath('.//dd')[i].xpath('.//a/text()')[0].extract()                
+                if con_ficha.xpath('.//dt/text()')[i].extract() == u'ISBN:':
+                    print 'Isbn: ' +con_ficha.xpath('.//dd')[i].extract()[4:-5]
+                print 'Disponibilidad: ' +con_dispo.xpath('.//text()')[0].extract().split('\t')[11]
+                if con_ficha.xpath('.//dt/text()')[i].extract() == u'Páginas:':
+                    print 'Paginas: ' +con_ficha.xpath('.//dd')[i].extract()[4:-5]
+                
+                
+                print 'Precio: ' +con_precio.xpath('.//text()')[2].extract().split(' ')[0]
+
+
+            
             print '----------------------\n'
-            self.escribe_temp(con_ficha.xpath('.//dd/text()')[4].extract())
+            #self.escribe_temp(con_ficha.xpath('.//dd/text()')[4].extract())
         
         def escribe_temp(self, isbn):
             temp = open('./temp.txt', 'ab')

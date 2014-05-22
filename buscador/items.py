@@ -9,7 +9,6 @@ class BuscadorItem(Item):
 	ISBN = Field()
 	titulo = Field()
 	autor = Field()
-	sinopsis = Field()
 	num_pag = Field()
 	editorial = Field()
 	precio = Field()
